@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'control-plane/**'
+      - 's-coder/**'
   workflow_dispatch:
 
 jobs:
@@ -32,12 +35,14 @@ jobs:
               - 's-coder/**'
 
       - name: Tailscale
+        if: steps.changes.outputs.control_plane == 'true' || steps.changes.outputs.s_coder == 'true'
         uses: tailscale/github-action@v4
         with:
           authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           ping: homelab-update-service
     
       - name: Remove Tailscale DNS
+        if: steps.changes.outputs.control_plane == 'true' || steps.changes.outputs.s_coder == 'true'
         run: |
           sudo tailscale set --accept-dns=false
         
