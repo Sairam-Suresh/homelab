@@ -1,0 +1,107 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  tailscale:
+    image: docker.io/tailscale/tailscale:latest
+    hostname: homelab
+    env_file:
+      - /home/sairamsuresh/.homelab/env
+    volumes:
+      - tailscale_data:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+      - ts_socket:/var/run/tailscale
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status --json | grep BackendState | grep -q Running"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - 51822:51822/udp
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=1
+    network_mode: "pasta"
+    restart: always
+  
+  personalwebsiteadminpanel:
+    image: localhost/www-admin
+    restart: always
+    environment:
+      - PORT=8090
+    depends_on:
+      - caddy
+      - tailscale
+    network_mode: service:tailscale
+
+  adguardhome:
+    image: docker.io/adguard/adguardhome
+    volumes:
+      - adguard_work:/opt/adguardhome/work
+      - adguard_conf:/opt/adguardhome/conf
+    restart: always
+    depends_on:
+      - caddy
+    network_mode: service:tailscale
+
+  caddy:
+    image: docker.io/arm64v8/caddy:alpine
+    network_mode: service:tailscale
+    volumes:
+      - ./configs/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_config:/config
+      - caddy_data:/data
+      - ts_socket:/var/run/tailscale:z
+      - step_data:/home/step:ro
+    restart: unless-stopped
+    depends_on:
+      - tailscale
+      - stepca
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+  
+  voidauth: 
+    image: docker.io/voidauth/voidauth:latest
+    restart: unless-stopped
+    volumes:
+      - ./configs/voidauth:/app/config
+      - voidauth_db:/app/db
+    env_file:
+      - /home/sairamsuresh/.homelab/env
+    network_mode: "service:tailscale"
+
+  stepca:
+    image: docker.io/smallstep/step-ca:latest
+    restart: unless-stopped
+    volumes:
+      - step_data:/home/step
+    env_file:
+      - /home/sairamsuresh/.homelab/env
+    network_mode: "service:tailscale"
+    depends_on:
+      - tailscale
+
+volumes:
+  adguard_work:
+  adguard_conf:
+  tailscale_data:
+  caddy_data:
+  caddy_config:
+  ts_socket:
+  voidauth_db:
+  step_data:
+
+# networks:
+#   homelabnet:
+#     driver: bridge
+#     driver_opts:
+#       mtu: "10000"
+#     ipam:
+#       config:
+#         - subnet: 172.28.0.0/16

@@ -1,0 +1,80 @@
+{
+    on_demand_tls {
+        ask https://mock.httpstatus.io/200
+    }
+
+    log console {
+        output stdout
+        format console
+        include http.log.access
+    }
+}
+
+
+(stepca_acme) {
+    issuer acme {
+        dir https://localhost:9000/acme/acme/directory
+        email sairam278.suresh@gmail.com
+        disable_tlsalpn_challenge
+        trusted_roots /home/step/certs/root_ca.crt
+    }
+}
+
+coder.home.net:443, *.coder.home.net:443 {
+    tls {
+        on_demand
+        import stepca_acme
+    }
+
+    log
+
+    reverse_proxy http://100.96.35.98:7080
+}
+
+dns.home.net:443 {
+    tls {
+        import stepca_acme
+    }
+
+    log
+
+    reverse_proxy http://127.0.0.1:8080
+}
+
+admin.sairamsuresh.is-a.dev:443 {
+    tls {
+        import stepca_acme
+    }
+
+    log
+
+    reverse_proxy http://127.0.0.1:8090
+}
+
+voidauth.home.net:443 {
+    tls {
+        import stepca_acme
+    }
+
+    log
+
+    reverse_proxy http://127.0.0.1:3000
+}
+
+homelab.tail4ef781.ts.net:443 {
+    log
+
+    handle /voidauth* {
+        reverse_proxy http://127.0.0.1:3000
+    }
+
+    handle_path /stepca* {
+        reverse_proxy https://127.0.0.1:9000 {
+            header_down Location ^/ /stepca/
+            transport http {
+                tls
+                tls_insecure_skip_verify
+            }
+        }
+    }
+}

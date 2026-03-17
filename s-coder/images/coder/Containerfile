@@ -1,0 +1,18 @@
+FROM ghcr.io/coder/coder:v2.30.3
+
+# Install mkisofs as root (Alpine)
+USER root
+RUN apk update && apk add cdrkit ca-certificates && apk cache clean
+
+COPY .homelab/certs/roots.pem /usr/local/share/ca-certificates/caddy-local-ca.crt
+RUN  chmod 644 /usr/local/share/ca-certificates/caddy-local-ca.crt
+
+COPY .homelab/certs/intermediates.pem /usr/local/share/ca-certificates/caddy-local-intermediate-ca.crt
+RUN  chmod 644 /usr/local/share/ca-certificates/caddy-local-intermediate-ca.crt
+
+RUN cat /usr/local/share/ca-certificates/caddy-local-ca.crt >> /etc/ssl/certs/ca-certificates.crt
+RUN cat /usr/local/share/ca-certificates/caddy-local-intermediate-ca.crt >> /etc/ssl/certs/ca-certificates.crt
+RUN update-ca-certificates
+
+# Switch to user 1000
+USER 1000
