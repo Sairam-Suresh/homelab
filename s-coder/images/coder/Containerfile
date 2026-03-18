@@ -1,4 +1,4 @@
-FROM ghcr.io/coder/coder:v2.30.3
+FROM ghcr.io/coder/coder:v2.30.4
 
 # Install mkisofs as root (Alpine)
 USER root
