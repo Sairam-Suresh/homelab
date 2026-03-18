@@ -32,6 +32,8 @@ services:
   personalwebsiteadminpanel:
     image: localhost/www-admin
     restart: always
+    env_file:
+      - /home/sairamsuresh/.homelab/env
     environment:
       - PORT=8090
     depends_on:
