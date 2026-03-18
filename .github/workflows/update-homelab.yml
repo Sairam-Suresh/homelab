@@ -38,7 +38,9 @@ jobs:
         if: steps.changes.outputs.control_plane == 'true' || steps.changes.outputs.s_coder == 'true'
         uses: tailscale/github-action@v4
         with:
-          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci,tag:ci-update-homelab
           ping: homelab-update-service
     
       - name: Remove Tailscale DNS
