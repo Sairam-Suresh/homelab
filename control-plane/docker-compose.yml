@@ -18,7 +18,7 @@ services:
       retries: 3
       start_period: 10s
     ports:
-      - 51822:51822/udp
+      - 44000:44000/udp
     cap_add:
       - NET_ADMIN
       - NET_RAW
