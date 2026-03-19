@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run from script directory so podman-compose finds the compose file
-cd "$(dirname "$0")"
+# Run relative to this script so docker-compose.yml is always found over SSH.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 if ! command -v podman-compose >/dev/null 2>&1; then
 	echo "podman-compose not found in PATH" >&2
 	exit 1
 fi
 
-echo "Stopping any existing podman-compose services (if present)..."
-# run down but don't fail if nothing to stop
-podman-compose down || true
-
-echo "Starting podman-compose services..."
+podman-compose down --remove-orphans
 podman-compose up -d
 
 # Remove tar if present (no error if absent)
