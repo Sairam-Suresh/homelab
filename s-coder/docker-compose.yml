@@ -5,7 +5,9 @@ x-podman:
 
 services:
   tailscale:
-    image: tailscale/tailscale:latest
+    build:
+      context: /home/administrator
+      dockerfile: homelab/images/tailscale/Containerfile
     env_file:
       - /home/administrator/.homelab/env
     security_opt:
@@ -37,6 +39,7 @@ services:
       - SYS_MODULE
     expose:
       - 7080
+      - 1055
     network_mode: "pasta"
   
   coder:
