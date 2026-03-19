@@ -1,0 +1,43 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  tailscale:
+    image: docker.io/tailscale/tailscale:latest
+    hostname: homelab-update-service
+    env_file: /home/sairamsuresh/.homelab_updater/env
+    environment:
+      - TS_STATE_DIR=/var/lib/tailscale
+    volumes:
+      - tailscale_data:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    healthcheck:
+      test: ["CMD-SHELL", "tailscale status --json | grep BackendState | grep -q Running"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ports:
+      - 51823:51823/udp
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv6.conf.all.forwarding=1
+    network_mode: "pasta"
+    restart: always
+  
+  homelab_updater_service:
+    image: localhost/github-project-deployer:latest
+    env_file: /home/sairamsuresh/.homelab_updater/env
+    volumes:
+      - /home/sairamsuresh/.homelab_updater/config:/config:ro
+      - homelab_updater_service_data:/data:rw
+    network_mode: service:tailscale
+    restart: always
+
+volumes:
+  tailscale_data:
+  homelab_updater_service_data:

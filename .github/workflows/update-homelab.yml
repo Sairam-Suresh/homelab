@@ -7,6 +7,7 @@ on:
     paths:
       - 'control-plane/**'
       - 's-coder/**'
+      - 's-homelab-updater/**'
   workflow_dispatch:
 
 jobs:
@@ -33,6 +34,8 @@ jobs:
               - 'control-plane/**'
             s_coder:
               - 's-coder/**'
+            s_homelab_updater:
+              - 's-homelab-updater/**'
 
       - name: Tailscale
         if: steps.changes.outputs.control_plane == 'true' || steps.changes.outputs.s_coder == 'true'
@@ -57,3 +60,8 @@ jobs:
         if: steps.changes.outputs.s_coder == 'true'
         run: |
           curl -fsS -X GET http://100.114.186.102:2345/update/s-coder
+      
+      - name: Trigger reload of the Homelab Updater Service
+        if: steps.changes.outputs.s_homelab_updater == 'true'
+        run: |
+          curl -fsS --max-time 5 -X GET http://100.114.186.102:2345/update || echo "Updater peer did not respond (expected during reset); continuing."
