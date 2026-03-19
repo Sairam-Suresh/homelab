@@ -36,7 +36,7 @@ services:
       - /home/sairamsuresh/.homelab_updater/config:/config:ro
       - homelab_updater_service_data:/data:rw
     network_mode: service:tailscale
-    restart: always
+    restart: unless-stopped
 
 volumes:
   tailscale_data:
