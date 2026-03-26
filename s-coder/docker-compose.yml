@@ -53,6 +53,7 @@ services:
     volumes:
       - coder_home:/home/coder:Z
       - ${XDG_RUNTIME_DIR}/libvirt/:/run/user/1000/libvirt/:z
+      - ${XDG_RUNTIME_DIR}/podman/:/run/user/1000/podman/:z
     group_add:
       - "keep-groups"
     restart: always
