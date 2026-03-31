@@ -79,4 +79,8 @@ stepca.service.internal:80 {
             tls_insecure_skip_verify
         }
     }
+
+    handle {
+        respond 404
+    }
 }
