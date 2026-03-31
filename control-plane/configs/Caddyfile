@@ -62,8 +62,6 @@ voidauth.service.internal:443 {
 }
 
 stepca.service.internal:80 {
-    tls off
-    
     log
 
     @roots path /roots.pem
