@@ -10,6 +10,12 @@ services:
       dockerfile: homelab/images/tailscale/Containerfile
     env_file:
       - /home/administrator/.homelab/env
+    environment:
+      - TS_AUTH_ONCE=true
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_ACCEPT_DNS=true
+      - TS_USERSPACE=false
+      - TS_SOCKET=/var/run/tailscale/tailscaled.sock
     security_opt:
       - label=type:homelab_tailscale_container.process
     hostname: coder
@@ -48,6 +54,13 @@ services:
       dockerfile: homelab/images/coder/Containerfile
     env_file:
       - /home/administrator/.homelab/env
+    environment:
+      - CODER_ACCESS_URL=https://coder.home.net
+      - CODER_WILDCARD_ACCESS_URL=*.coder.home.net
+      - CODER_HTTP_ADDRESS=0.0.0.0:7080
+      - LIBVIRT_DEFAULT_URI=qemu:///session?socket=/run/user/1000/libvirt/virtqemud-sock
+      - CODER_OIDC_ISSUER_URL=https://voidauth.home.net/oidc
+      - CODER_DISABLE_PASSWORD_AUTH=true
     security_opt:
       - label=type:homelab_coder_container.process
     volumes:
