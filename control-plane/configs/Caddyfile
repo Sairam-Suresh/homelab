@@ -67,8 +67,7 @@ stepca.service.internal:80 {
     @roots path /roots.pem
     @ints path /intermediates.pem
 
-    @root path /
-    respond @root 200
+    respond / "OK" 200
 
     reverse_proxy @roots https://127.0.0.1:9000 {
         transport http {
