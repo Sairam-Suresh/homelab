@@ -79,7 +79,9 @@ stepca.service.internal:80 {
             tls_insecure_skip_verify
         }
     }
+}
 
+healthcheck.service.internal:80 {
     handle / {
         respond "OK" 200
     }
