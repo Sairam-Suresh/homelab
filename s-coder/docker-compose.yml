@@ -55,11 +55,11 @@ services:
     env_file:
       - /home/administrator/.homelab/env
     environment:
-      - CODER_ACCESS_URL=https://coder.home.net
-      - CODER_WILDCARD_ACCESS_URL=*.coder.home.net
+      - CODER_ACCESS_URL=https://coder.service.internal
+      - CODER_WILDCARD_ACCESS_URL=*.coder.service.internal
       - CODER_HTTP_ADDRESS=0.0.0.0:7080
       - LIBVIRT_DEFAULT_URI=qemu:///session?socket=/run/user/1000/libvirt/virtqemud-sock
-      - CODER_OIDC_ISSUER_URL=https://voidauth.home.net/oidc
+      - CODER_OIDC_ISSUER_URL=https://voidauth.service.internal/oidc
       - CODER_DISABLE_PASSWORD_AUTH=true
     security_opt:
       - label=type:homelab_coder_container.process

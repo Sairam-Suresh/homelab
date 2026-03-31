@@ -79,7 +79,7 @@ services:
     image: docker.io/voidauth/voidauth:latest
     restart: unless-stopped
     environment:
-      - APP_URL=https://voidauth.home.net/
+      - APP_URL=https://voidauth.service.internal/
       - DB_ADAPTER=sqlite
     volumes:
       - ./configs/voidauth:/app/config
@@ -95,7 +95,7 @@ services:
       - step_data:/home/step
     environment:
       - DOCKER_STEPCA_INIT_NAME="Sairam's CA"
-      - DOCKER_STEPCA_INIT_DNS_NAMES=homelab.tail4ef781.ts.net,localhost
+      - DOCKER_STEPCA_INIT_DNS_NAMES=homelab.tail4ef781.ts.net,localhost,stepca.service.internal
       - DOCKER_STEPCA_INIT_REMOTE_MANAGEMENT=true
     network_mode: "service:tailscale"
     depends_on:

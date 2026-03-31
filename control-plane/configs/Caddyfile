@@ -20,7 +20,7 @@
     }
 }
 
-coder.home.net:443, *.coder.home.net:443 {
+coder.service.internal:443, *.coder.service.internal:443 {
     tls {
         on_demand
         import stepca_acme
@@ -31,7 +31,7 @@ coder.home.net:443, *.coder.home.net:443 {
     reverse_proxy http://100.96.35.98:7080
 }
 
-dns.home.net:443 {
+dns.service.internal:443 {
     tls {
         import stepca_acme
     }
@@ -51,7 +51,7 @@ admin.sairamsuresh.is-a.dev:443 {
     reverse_proxy http://127.0.0.1:8090
 }
 
-voidauth.home.net:443 {
+voidauth.service.internal:443 {
     tls {
         import stepca_acme
     }
@@ -61,20 +61,24 @@ voidauth.home.net:443 {
     reverse_proxy http://127.0.0.1:3000
 }
 
-homelab.tail4ef781.ts.net:443 {
+stepca.service.internal:80 {
+    tls off
+    
     log
 
-    handle /voidauth* {
-        reverse_proxy http://127.0.0.1:3000
-    }
+    @roots path /roots.pem
+    @ints path /intermediates.pem
 
-    handle_path /stepca* {
-        reverse_proxy https://127.0.0.1:9000 {
-            header_down Location ^/ /stepca/
-            transport http {
-                tls
-                tls_insecure_skip_verify
-            }
+    reverse_proxy @roots https://127.0.0.1:9000 {
+        transport http {
+            tls
+            tls_insecure_skip_verify
+        }
+    }
+    reverse_proxy @ints https://127.0.0.1:9000 {
+        transport http {
+            tls
+            tls_insecure_skip_verify
         }
     }
 }
