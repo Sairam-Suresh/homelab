@@ -5,6 +5,13 @@ services:
   tailscale:
     image: docker.io/tailscale/tailscale:latest
     hostname: homelab
+    environment:
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_ENABLE_METRICS=true
+      - TS_TAILSCALED_EXTRA_ARGS=--port=44000
+      - TS_ACCEPT_DNS=true
+      - TS_SOCKET=/var/run/tailscale/tailscaled.sock
     env_file:
       - /home/sairamsuresh/.homelab/env
     volumes:
@@ -71,6 +78,9 @@ services:
   voidauth: 
     image: docker.io/voidauth/voidauth:latest
     restart: unless-stopped
+    environment:
+      - APP_URL=https://voidauth.home.net/
+      - DB_ADAPTER=sqlite
     volumes:
       - ./configs/voidauth:/app/config
       - voidauth_db:/app/db
@@ -83,8 +93,10 @@ services:
     restart: unless-stopped
     volumes:
       - step_data:/home/step
-    env_file:
-      - /home/sairamsuresh/.homelab/env
+    environment:
+      - DOCKER_STEPCA_INIT_NAME="Sairam's CA"
+      - DOCKER_STEPCA_INIT_DNS_NAMES=homelab.tail4ef781.ts.net,localhost
+      - DOCKER_STEPCA_INIT_REMOTE_MANAGEMENT=true
     network_mode: "service:tailscale"
     depends_on:
       - tailscale
