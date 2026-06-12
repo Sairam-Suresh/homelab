@@ -104,10 +104,10 @@ services:
 
   coder:
     build:
-      context: /home/administrator
+      context: /home/sairamsuresh
       dockerfile: homelab/images/coder/Containerfile
     env_file:
-      - /home/administrator/.homelab/env
+      - /home/sairamsuresh/.homelab/env
     environment:
       - CODER_ACCESS_URL=https://coder.service.internal
       - CODER_WILDCARD_ACCESS_URL=*.coder.service.internal
@@ -132,7 +132,7 @@ services:
   database:
     image: "postgres:16"
     env_file:
-      - /home/administrator/.homelab/env
+      - /home/sairamsuresh/.homelab/env
     volumes:
       - coder_data:/var/lib/postgresql/data:Z
     healthcheck:
