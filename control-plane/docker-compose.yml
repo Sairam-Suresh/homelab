@@ -116,7 +116,7 @@ services:
       - CODER_OIDC_ISSUER_URL=https://voidauth.service.internal/oidc
       - CODER_DISABLE_PASSWORD_AUTH=true
     volumes:
-      - coder_home:/home/coder:Z
+      - coder_home:/home/coder
     group_add:
       - "keep-groups"
     restart: always
@@ -130,11 +130,11 @@ services:
     network_mode: "service:tailscale"
 
   coder_database:
-    image: "postgres:16"
+    image: docker.io/library/postgres:16.14-trixie
     env_file:
       - /home/sairamsuresh/.homelab/env
     volumes:
-      - coder_data:/var/lib/postgresql/data:Z
+      - coder_data:/var/lib/postgresql/data
     healthcheck:
       test:
         [
