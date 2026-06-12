@@ -36,6 +36,23 @@ services:
       - net.ipv6.conf.all.forwarding=1
     network_mode: "pasta"
     restart: always
+
+  caddy:
+    image: docker.io/arm64v8/caddy:alpine
+    network_mode: service:tailscale
+    volumes:
+      - ./configs/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_config:/config
+      - caddy_data:/data
+      - ts_socket:/var/run/tailscale:z
+      - step_data:/home/step:ro
+    restart: unless-stopped
+    depends_on:
+      - tailscale
+      - stepca
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
   
   personalwebsiteadminpanel:
     image: localhost/www-admin
@@ -58,23 +75,6 @@ services:
     depends_on:
       - caddy
     network_mode: service:tailscale
-
-  caddy:
-    image: docker.io/arm64v8/caddy:alpine
-    network_mode: service:tailscale
-    volumes:
-      - ./configs/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_config:/config
-      - caddy_data:/data
-      - ts_socket:/var/run/tailscale:z
-      - step_data:/home/step:ro
-    restart: unless-stopped
-    depends_on:
-      - tailscale
-      - stepca
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
   
   voidauth: 
     image: docker.io/voidauth/voidauth:latest
@@ -101,6 +101,53 @@ services:
     network_mode: "service:tailscale"
     depends_on:
       - tailscale
+
+  coder:
+    build:
+      context: /home/administrator
+      dockerfile: homelab/images/coder/Containerfile
+    env_file:
+      - /home/administrator/.homelab/env
+    environment:
+      - CODER_ACCESS_URL=https://coder.service.internal
+      - CODER_WILDCARD_ACCESS_URL=*.coder.service.internal
+      - CODER_HTTP_ADDRESS=0.0.0.0:7080
+#      - LIBVIRT_DEFAULT_URI=qemu:///session?socket=/run/user/1000/libvirt/virtqemud-sock
+      - CODER_OIDC_ISSUER_URL=https://voidauth.service.internal/oidc
+      - CODER_DISABLE_PASSWORD_AUTH=true
+    volumes:
+      - coder_home:/home/coder:Z
+    group_add:
+      - "keep-groups"
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+    user: "1000:1000" 
+    expose:
+      - 7080
+      - 5432
+    network_mode: "service:tailscale"
+
+  database:
+    image: "postgres:16"
+    env_file:
+      - /home/administrator/.homelab/env
+    volumes:
+      - coder_data:/var/lib/postgresql/data:Z
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-username} -d ${POSTGRES_DB:-coder}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    expose:
+      - 5432
+    network_mode: "service:tailscale"
 
 volumes:
   adguard_work:

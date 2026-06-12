@@ -28,7 +28,7 @@ coder.service.internal:443, *.coder.service.internal:443 {
 
     log
 
-    reverse_proxy http://100.96.35.98:7080
+    reverse_proxy http://127.0.0.1:7080
 }
 
 dns.service.internal:443 {
