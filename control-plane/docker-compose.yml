@@ -121,7 +121,7 @@ services:
       - "keep-groups"
     restart: always
     depends_on:
-      database:
+      coder_database:
         condition: service_healthy
     user: "1000:1000" 
     expose:
@@ -129,7 +129,7 @@ services:
       - 5432
     network_mode: "service:tailscale"
 
-  database:
+  coder_database:
     image: "postgres:16"
     env_file:
       - /home/sairamsuresh/.homelab/env
@@ -158,6 +158,8 @@ volumes:
   ts_socket:
   voidauth_db:
   step_data:
+  coder_data:
+  coder_home:
 
 # networks:
 #   homelabnet:
