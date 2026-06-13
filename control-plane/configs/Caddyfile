@@ -28,7 +28,7 @@ coder.service.internal:443, *.coder.service.internal:443 {
 
     log
 
-    reverse_proxy http://127.0.0.1:7080
+    reverse_proxy {$CODER_UPSTREAM_IP}
 }
 
 dns.service.internal:443 {

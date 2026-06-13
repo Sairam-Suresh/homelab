@@ -40,6 +40,8 @@ services:
   caddy:
     image: docker.io/arm64v8/caddy:alpine
     network_mode: service:tailscale
+    env_file:
+      - /home/sairamsuresh/.homelab/env
     volumes:
       - ./configs/Caddyfile:/etc/caddy/Caddyfile
       - caddy_config:/config
