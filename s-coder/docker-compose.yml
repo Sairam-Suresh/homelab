@@ -1,0 +1,65 @@
+version: '3.8'
+
+x-podman:
+  in_pod: false
+
+services:
+  coder:
+    build:
+      context: /home/administrator
+      dockerfile: homelab/images/coder/Containerfile
+    env_file:
+      - /home/administrator/.homelab/env
+    environment:
+      - CODER_ACCESS_URL=https://coder.service.internal
+      - CODER_WILDCARD_ACCESS_URL=*.coder.service.internal
+      - CODER_HTTP_ADDRESS=0.0.0.0:7080
+      - LIBVIRT_DEFAULT_URI=qemu:///session?socket=/run/user/1000/libvirt/virtqemud-sock
+      - CODER_OIDC_ISSUER_URL=https://voidauth.service.internal/oidc
+      - CODER_DISABLE_PASSWORD_AUTH=true
+    security_opt:
+      - label=type:homelab_coder_container.process
+    volumes:
+      - coder_home:/home/coder:Z
+      - ${XDG_RUNTIME_DIR}/libvirt/:/run/user/1000/libvirt/:z
+      - /home/administrator/.homelab/terraform-workspace-key:/home/coder/.ssh/id_ed25519:U
+      - /home/administrator/.homelab/terraform-workspace-key.pub:/home/coder/.ssh/id_ed25519.pub:U
+    group_add:
+      - "keep-groups"
+    restart: always
+    depends_on:
+      database:
+        condition: service_healthy
+    userns_mode: "keep-id"
+    user: "1000:1000" 
+    expose:
+      - 7080
+      - 5432
+    network_mode: "pasta"
+
+  # PostgreSQL database for Coder.
+  database:
+    image: "postgres:16"
+    env_file:
+      - /home/administrator/.homelab/env
+    security_opt:
+      - label=type:homelab_database_container.process
+    volumes:
+      - coder_data:/var/lib/postgresql/data:Z
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-username} -d ${POSTGRES_DB:-coder}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    expose:
+      - 5432
+    network_mode: "service:coder"
+
+volumes:
+  coder_data:
+  coder_home:

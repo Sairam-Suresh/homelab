@@ -26,6 +26,7 @@ services:
       start_period: 10s
     ports:
       - 44000:44000/udp
+      - 1080:1080
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -100,55 +101,13 @@ services:
     network_mode: "service:tailscale"
     depends_on:
       - tailscale
-
-  coder:
-    build:
-      context: /home/sairamsuresh
-      dockerfile: homelab/images/coder/Containerfile
+  
+  external_service_proxy:
+    image: docker.io/serjs/go-socks5-proxy
+    network_mode: service:tailscale
     env_file:
       - /home/sairamsuresh/.homelab/env
-    environment:
-      - CODER_ACCESS_URL=https://coder.service.internal
-      - CODER_WILDCARD_ACCESS_URL=*.coder.service.internal
-      - CODER_HTTP_ADDRESS=0.0.0.0:7080
-#      - LIBVIRT_DEFAULT_URI=qemu:///session?socket=/run/user/1000/libvirt/virtqemud-sock
-      - CODER_OIDC_ISSUER_URL=https://voidauth.service.internal/oidc
-      - CODER_DISABLE_PASSWORD_AUTH=true
-    volumes:
-      - coder_home:/home/coder
-      - /home/sairamsuresh/.homelab/terraform-workspace-key:/home/coder/.ssh/id_ed25519:U
-      - /home/sairamsuresh/.homelab/terraform-workspace-key.pub:/home/coder/.ssh/id_ed25519.pub:U
-    group_add:
-      - "keep-groups"
     restart: always
-    depends_on:
-      coder_database:
-        condition: service_healthy
-    user: "1000:1000" 
-    expose:
-      - 7080
-      - 5432
-    network_mode: "service:tailscale"
-
-  coder_database:
-    image: docker.io/library/postgres:16.14-trixie
-    env_file:
-      - /home/sairamsuresh/.homelab/env
-    volumes:
-      - coder_data:/var/lib/postgresql/data
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-username} -d ${POSTGRES_DB:-coder}",
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: always
-    expose:
-      - 5432
-    network_mode: "service:tailscale"
 
 volumes:
   adguard_work:
@@ -159,8 +118,6 @@ volumes:
   ts_socket:
   voidauth_db:
   step_data:
-  coder_data:
-  coder_home:
 
 # networks:
 #   homelabnet:
