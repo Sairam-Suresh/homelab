@@ -36,6 +36,11 @@ dns.service.internal:443 {
         import stepca_acme
     }
 
+    forward_auth 127.0.0.1:3000 {
+        uri /api/authz/forward-auth
+        copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+    }
+
     log
 
     reverse_proxy http://127.0.0.1:8080
