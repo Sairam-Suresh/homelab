@@ -21,6 +21,7 @@ services:
       - label=type:homelab_coder_container.process
     volumes:
       - coder_home:/home/coder:Z
+      - ${XDG_RUNTIME_DIR}/libvirt/:/run/user/1000/libvirt/:z
       - /home/administrator/.homelab/terraform-workspace-key:/home/coder/.ssh/id_ed25519:U
       - /home/administrator/.homelab/terraform-workspace-key.pub:/home/coder/.ssh/id_ed25519.pub:U
     group_add:
