@@ -66,7 +66,7 @@ jobs:
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci,tag:ci-update-homelab
+          tags: tag:ci
           ping: homelab
 
       - name: Deploy Changed Services
@@ -88,6 +88,7 @@ jobs:
             READY=false
             for i in $(seq 1 30); do
               if curl -fsS "$HEALTH_URL" 2>/dev/null | grep -q '"ok"'; then
+              if curl -kfsS "$HEALTH_URL" 2>/dev/null | grep -q '"ok"'; then
                 echo "Updater service is online and ready!"
                 READY=true
                 break
@@ -102,6 +103,7 @@ jobs:
             fi
 
             RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${UPDATER_URL}" \
+            RESPONSE=$(curl -k -s -w "\n%{http_code}" -X POST "${UPDATER_URL}" \
               -H "Content-Type: application/json" \
               -d "{
                 \"repo_url\": \"${{ github.server_url }}/${{ github.repository }}.git\",
