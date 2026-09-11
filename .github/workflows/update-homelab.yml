@@ -1,64 +1,125 @@
-name: Trigger Update & Reload of the Homelab Updater Service
+name: Deploy Homelab Services
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'control-plane/**'
-      - 's-coder/**'
-      - 's-homelab-updater/**'
   workflow_dispatch:
 
 jobs:
-  test-and-publish:
+  detect-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout monorepo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Needed to compare changes with HEAD~1
+
+      - name: Detect changed service directories
+        id: changed-services
+        run: |
+          python3 - << 'EOF'
+          import json
+          import os
+          import subprocess
+
+          # Get changed files between HEAD~1 and HEAD, or inspect HEAD commit
+          try:
+              diff_out = subprocess.check_output(["git", "diff", "--name-only", "HEAD~1", "HEAD"], text=True)
+          except Exception:
+              diff_out = subprocess.check_output(["git", "log", "-1", "--name-only", "--format="], text=True)
+
+          changed_files = [line.strip() for line in diff_out.splitlines() if line.strip()]
+          services = set()
+
+          # For each changed file, check if its directory or any parent contains deploy.yaml
+          for path in changed_files:
+              cur = os.path.dirname(path)
+              while cur and cur != ".":
+                  if os.path.isfile(os.path.join(cur, "deploy.yaml")):
+                      services.add(cur)
+                      break
+                  cur = os.path.dirname(cur)
+
+          # Sort services so control-plane deploys last (allowing other services to deploy before the updater restarts)
+          matrix = sorted(list(services), key=lambda s: (1 if s == "control-plane" else 0, s))
+          print("Detected services to deploy:", matrix)
+
+          # Output matrix to GitHub environment
+          output_file = os.environ.get("GITHUB_OUTPUT")
+          if output_file:
+              with open(output_file, "a") as f:
+                  f.write(f"matrix={json.dumps(matrix)}\n")
+          EOF
+
+    outputs:
+      matrix: ${{ steps.changed-services.outputs.matrix }}
+
+  deploy:
+    needs: detect-and-deploy
+    if: ${{ needs.detect-and-deploy.outputs.matrix != '[]' && needs.detect-and-deploy.outputs.matrix != '' }}
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: ${{ github.workspace }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Detect changed paths
-        id: changes
-        uses: dorny/paths-filter@v4
-        with:
-          filters: |
-            control_plane:
-              - 'control-plane/**'
-            s_coder:
-              - 's-coder/**'
-            s_homelab_updater:
-              - 's-homelab-updater/**'
-
       - name: Tailscale
-        if: steps.changes.outputs.control_plane == 'true' || steps.changes.outputs.s_coder == 'true'
         uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
           tags: tag:ci,tag:ci-update-homelab
-          ping: homelab-update-service
-    
-      - name: Remove Tailscale DNS
-        if: steps.changes.outputs.control_plane == 'true' || steps.changes.outputs.s_coder == 'true'
-        run: |
-          sudo tailscale set --accept-dns=false
-        
-      - name: Trigger reload of the Control Plane
-        if: steps.changes.outputs.control_plane == 'true'
-        run: |
-          curl -fsS -X GET http://100.114.186.102:2345/update/homelab_control_plane
+          ping: homelab
 
-      - name: Trigger reload of the Coder Service
-        if: steps.changes.outputs.s_coder == 'true'
+      - name: Deploy Changed Services
+        env:
+          SERVICES_JSON: ${{ needs.detect-and-deploy.outputs.matrix }}
+          UPDATER_URL: ${{ secrets.HOMELAB_UPDATER_URL }}
         run: |
-          curl -fsS -X GET http://100.114.186.102:2345/update/s-coder
-      
-      - name: Trigger reload of the Homelab Updater Service
-        if: steps.changes.outputs.s_homelab_updater == 'true'
-        run: |
-          curl -fsS --max-time 5 -X GET http://100.114.186.102:2345/update || echo "Updater peer did not respond (expected during reset); continuing."
+          BASE_URL="${UPDATER_URL%/api/v1/deploy}"
+          HEALTH_URL="${BASE_URL%/}/healthz"
+
+          SERVICES=$(echo "$SERVICES_JSON" | jq -r '.[]')
+
+          for service_path in $SERVICES; do
+            echo "===================================================="
+            echo "Deploying service path: $service_path at commit ${{ github.sha }}"
+            echo "===================================================="
+
+            echo "Waiting for updater service at $HEALTH_URL to be online and healthy..."
+            READY=false
+            for i in $(seq 1 30); do
+              if curl -fsS "$HEALTH_URL" 2>/dev/null | grep -q '"ok"'; then
+                echo "Updater service is online and ready!"
+                READY=true
+                break
+              fi
+              echo "Waiting for updater to become ready... (attempt $i/30)"
+              sleep 2
+            done
+
+            if [ "$READY" != "true" ]; then
+              echo "Error: Timed out waiting for updater service at $HEALTH_URL"
+              exit 1
+            fi
+
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${UPDATER_URL}" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"repo_url\": \"${{ github.server_url }}/${{ github.repository }}.git\",
+                \"commit_sha\": \"${{ github.sha }}\",
+                \"repo_relative_path\": \"$service_path\",
+                \"git_branch\": \"${{ github.ref_name }}\"
+              }")
+
+            HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n 1)
+
+            echo "Response Body:"
+            echo "$HTTP_BODY" | jq . 2>/dev/null || echo "$HTTP_BODY"
+            echo "HTTP Status Code: $HTTP_CODE"
+
+            if [ "$HTTP_CODE" -ne 200 ]; then
+              echo "Deployment failed for $service_path with status code $HTTP_CODE!"
+              exit 1
+            fi
+            echo "Deployment succeeded for $service_path!"
+          done

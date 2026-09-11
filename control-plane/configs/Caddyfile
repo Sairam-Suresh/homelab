@@ -95,3 +95,13 @@ healthcheck.service.internal:80 {
         respond 404
     }
 }
+
+updater.service.internal:443 {
+    tls {
+        import stepca_acme
+    }
+
+    log
+
+    reverse_proxy http://127.0.0.1:7777
+}

@@ -1,0 +1,19 @@
+# deploy.yaml for control-plane
+# Target device identifier matching an entry in /etc/homelab-updater/devices.yaml
+device: local
+
+# Destination directory on target system where folder contents will be synced
+target_dir: /opt/serve/homelab
+
+# Bootstrap script to run on target after rsync
+bootstrap_script: start.sh
+
+# Environment variables exported during bootstrap execution
+environment:
+  DEPLOY_ENV: production
+
+# Rsync exclusions
+rsync_exclude:
+  - ".git*"
+  - "__pycache__"
+  - "*.tmp"

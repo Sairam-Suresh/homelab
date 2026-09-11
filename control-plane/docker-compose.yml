@@ -13,7 +13,7 @@ services:
       - TS_ACCEPT_DNS=true
       - TS_SOCKET=/var/run/tailscale/tailscaled.sock
     env_file:
-      - /home/sairamsuresh/.homelab/env
+      - /opt/serve/.homelab/env
     volumes:
       - tailscale_data:/var/lib/tailscale
       - /dev/net/tun:/dev/net/tun
@@ -41,7 +41,7 @@ services:
     image: docker.io/arm64v8/caddy:alpine
     network_mode: service:tailscale
     env_file:
-      - /home/sairamsuresh/.homelab/env
+      - /opt/serve/.homelab/env
     volumes:
       - ./configs/Caddyfile:/etc/caddy/Caddyfile
       - caddy_config:/config
@@ -60,7 +60,7 @@ services:
     image: localhost/www-admin
     restart: always
     env_file:
-      - /home/sairamsuresh/.homelab/env
+      - /opt/serve/.homelab/env
     environment:
       - PORT=8090
     depends_on:
@@ -88,7 +88,7 @@ services:
       - ./configs/voidauth:/app/config
       - voidauth_db:/app/db
     env_file:
-      - /home/sairamsuresh/.homelab/env
+      - /opt/serve/.homelab/env
     network_mode: "service:tailscale"
 
   stepca:
@@ -108,8 +108,26 @@ services:
     image: docker.io/serjs/go-socks5-proxy
     network_mode: service:tailscale
     env_file:
-      - /home/sairamsuresh/.homelab/env
+      - /opt/serve/.homelab/env
     restart: always
+
+  homelab_updater:
+    image: ghcr.io/sairam-suresh/homelab-update-service:latest
+    restart: unless-stopped
+    env_file:
+      - /opt/serve/.homelab/env
+    environment:
+      - PORT=7777
+      - DEVICES_CONFIG_PATH=/etc/homelab-updater/devices.yaml
+      - ALLOWED_SIGNERS_PATH=/etc/homelab-updater/allowed_signers
+      - REQUIRE_COMMIT_SIGNATURE=true
+    volumes:
+      - /opt/serve/.homelab_updater/devices.yaml:/etc/homelab-updater/devices.yaml:ro
+      - /opt/serve/.homelab_updater/allowed_signers:/etc/homelab-updater/allowed_signers:ro
+      - /opt/serve/.homelab_updater/keys:/etc/homelab-updater/keys:ro
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
 
 volumes:
   adguard_work:
