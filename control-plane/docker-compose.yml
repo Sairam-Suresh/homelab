@@ -48,6 +48,7 @@ services:
       - caddy_data:/data
       - ts_socket:/var/run/tailscale:z
       - step_data:/home/step:ro
+      - caddy_socket:/var/run/caddy:z
     restart: unless-stopped
     depends_on:
       - tailscale
@@ -55,6 +56,22 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+
+  sparkplug:
+    image: ghcr.io/sairam-suresh/sparkplug:latest
+    restart: unless-stopped
+    network_mode: service:tailscale
+    env_file:
+      - /opt/serve/.homelab/env
+    environment:
+      - SPARKPLUG_CONFIG_PATH=/etc/sparkplug/config.yaml
+    volumes:
+      - /opt/serve/.sparkplug/config.yaml:/etc/sparkplug/config.yaml:ro
+      - /opt/serve/.sparkplug/keys:/etc/sparkplug/keys:ro
+      - caddy_socket:/var/run/caddy:z
+    depends_on:
+      - tailscale
+      - caddy
   
   personalwebsiteadminpanel:
     image: localhost/www-admin
@@ -138,12 +155,4 @@ volumes:
   ts_socket:
   voidauth_db:
   step_data:
-
-# networks:
-#   homelabnet:
-#     driver: bridge
-#     driver_opts:
-#       mtu: "10000"
-#     ipam:
-#       config:
-#         - subnet: 172.28.0.0/16
+  caddy_socket:

@@ -26,9 +26,24 @@ coder.service.internal:443, *.coder.service.internal:443 {
         import stepca_acme
     }
 
-    log
+    # 1. Stream real-time JSON access logs to SparkPlug socket for idle & error tracking
+    log {
+        output net unix//var/run/caddy/sparkplug.sock
+        format json
+    }
 
-    reverse_proxy {$CODER_UPSTREAM_IP}
+    # 2. Proxy to upstream host with dial timeout for fast offline detection
+    reverse_proxy {$CODER_UPSTREAM_IP} {
+        transport http {
+            dial_timeout 3s
+        }
+    }
+
+    # 3. Intercept offline/sleeping errors and show SparkPlug wake screen
+    handle_errors 502 503 504 {
+        rewrite * /wake/coder?redirect={scheme}://{host}{uri}
+        reverse_proxy http://127.0.0.1:8085
+    }
 }
 
 dns.service.internal:443 {
@@ -104,4 +119,15 @@ updater.service.internal:443 {
     log
 
     reverse_proxy http://127.0.0.1:7777
+}
+
+# SparkPlug Web Dashboard and API
+sparkplug.service.internal:443 {
+    tls {
+        import stepca_acme
+    }
+
+    log
+
+    reverse_proxy http://127.0.0.1:8085
 }
