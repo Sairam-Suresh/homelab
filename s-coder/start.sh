@@ -10,4 +10,4 @@ if ! command -v podman-compose >/dev/null 2>&1; then
 fi
 
 podman-compose down --remove-orphans || true
-podman-compose up -d
+podman-compose up -d --build
