@@ -23,23 +23,36 @@ jobs:
           import os
           import subprocess
 
-          # Get changed files between HEAD~1 and HEAD, or inspect HEAD commit
+          # Check latest commit message for [deploy all] or [force all]
           try:
-              diff_out = subprocess.check_output(["git", "diff", "--name-only", "HEAD~1", "HEAD"], text=True)
+              commit_msg = subprocess.check_output(["git", "log", "-1", "--format=%B"], text=True)
           except Exception:
-              diff_out = subprocess.check_output(["git", "log", "-1", "--name-only", "--format="], text=True)
+              commit_msg = ""
+          force_commit = "[deploy all]" in commit_msg.lower() or "[force all]" in commit_msg.lower()
 
-          changed_files = [line.strip() for line in diff_out.splitlines() if line.strip()]
           services = set()
 
-          # For each changed file, check if its directory or any parent contains deploy.yaml
-          for path in changed_files:
-              cur = os.path.dirname(path)
-              while cur and cur != ".":
-                  if os.path.isfile(os.path.join(cur, "deploy.yaml")):
-                      services.add(cur)
-                      break
-                  cur = os.path.dirname(cur)
+          if force_commit:
+              # Discover all folders in the repository containing deploy.yaml
+              for root, dirs, files in os.walk('.'):
+                  dirs[:] = [d for d in dirs if not d.startswith('.')]
+                  if 'deploy.yaml' in files:
+                      services.add(os.path.normpath(os.path.relpath(root, '.')))
+          else:
+              # Normal git diff detection between HEAD~1 and HEAD
+              try:
+                  diff_out = subprocess.check_output(["git", "diff", "--name-only", "HEAD~1", "HEAD"], text=True)
+              except Exception:
+                  diff_out = subprocess.check_output(["git", "log", "-1", "--name-only", "--format="], text=True)
+
+              changed_files = [line.strip() for line in diff_out.splitlines() if line.strip()]
+              for path in changed_files:
+                  cur = os.path.dirname(path)
+                  while cur and cur != ".":
+                      if os.path.isfile(os.path.join(cur, "deploy.yaml")):
+                          services.add(cur)
+                          break
+                      cur = os.path.dirname(cur)
 
           # Sort services so control-plane deploys last (allowing other services to deploy before the updater restarts)
           matrix = sorted(list(services), key=lambda s: (1 if s == "control-plane" else 0, s))
@@ -69,6 +82,11 @@ jobs:
           tags: tag:ci
           ping: homelab
 
+      - name: Trust Step-CA Root Certificate
+        run: |
+          sudo curl -fsS http://stepca.service.internal/roots.pem -o /usr/local/share/ca-certificates/stepca.crt
+          sudo update-ca-certificates
+
       - name: Deploy Changed Services
         env:
           SERVICES_JSON: ${{ needs.detect-and-deploy.outputs.matrix }}
@@ -88,7 +106,6 @@ jobs:
             READY=false
             for i in $(seq 1 30); do
               if curl -fsS "$HEALTH_URL" 2>/dev/null | grep -q '"ok"'; then
-              if curl -kfsS "$HEALTH_URL" 2>/dev/null | grep -q '"ok"'; then
                 echo "Updater service is online and ready!"
                 READY=true
                 break
@@ -103,7 +120,6 @@ jobs:
             fi
 
             RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "${UPDATER_URL}" \
-            RESPONSE=$(curl -k -s -w "\n%{http_code}" -X POST "${UPDATER_URL}" \
               -H "Content-Type: application/json" \
               -d "{
                 \"repo_url\": \"${{ github.server_url }}/${{ github.repository }}.git\",
