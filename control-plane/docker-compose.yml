@@ -67,7 +67,7 @@ services:
       - SPARKPLUG_CONFIG_PATH=/etc/sparkplug/config.yaml
     volumes:
       - /opt/serve/.sparkplug/config.yaml:/etc/sparkplug/config.yaml:ro
-      - /opt/serve/.sparkplug/keys:/etc/sparkplug/keys:ro
+      - /opt/serve/.sparkplug/keys:/etc/sparkplug/keys
       - caddy_socket:/var/run/caddy:z
     depends_on:
       - tailscale
