@@ -40,9 +40,7 @@ coder.service.internal:443, *.coder.service.internal:443 {
 
     # 3. Intercept offline/sleeping errors and show SparkPlug wake screen
     handle_errors 502 503 504 {
-        rewrite * /wake/coder?redirect={scheme}://{host}{uri}
-        # Reaches SparkPlug on the host from inside the Caddy container
-        reverse_proxy http://host.containers.internal:8085
+        redir https://sparkplug.service.internal/wake/coder?redirect=https://{host}{uri} 307
     }
 }
 
