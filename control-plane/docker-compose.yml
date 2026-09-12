@@ -1,4 +1,3 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
@@ -60,7 +59,7 @@ services:
   sparkplug:
     image: ghcr.io/sairam-suresh/sparkplug:latest
     restart: unless-stopped
-    network_mode: service:tailscale
+    network_mode: "host"
     env_file:
       - /opt/serve/.homelab/env
     environment:

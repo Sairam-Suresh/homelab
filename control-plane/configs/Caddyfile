@@ -10,7 +10,6 @@
     }
 }
 
-
 (stepca_acme) {
     issuer acme {
         dir https://localhost:9000/acme/acme/directory
@@ -42,7 +41,8 @@ coder.service.internal:443, *.coder.service.internal:443 {
     # 3. Intercept offline/sleeping errors and show SparkPlug wake screen
     handle_errors 502 503 504 {
         rewrite * /wake/coder?redirect={scheme}://{host}{uri}
-        reverse_proxy http://127.0.0.1:8085
+        # Reaches SparkPlug on the host from inside the Caddy container
+        reverse_proxy http://host.containers.internal:8085
     }
 }
 
@@ -129,5 +129,5 @@ sparkplug.service.internal:443 {
 
     log
 
-    reverse_proxy http://127.0.0.1:8085
+    reverse_proxy http://host.containers.internal:8085
 }
