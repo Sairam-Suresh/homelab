@@ -25,21 +25,22 @@ coder.service.internal:443, *.coder.service.internal:443 {
         import stepca_acme
     }
 
-    # 1. Stream real-time JSON access logs to SparkPlug socket for idle & error tracking
+    # 1. Stream real-time JSON access logs to SparkPlug socket
     log {
         output net unix//var/run/caddy/sparkplug.sock
         format json
     }
 
-    # 2. Proxy to upstream host with dial timeout for fast offline detection
+    # 2. Upstream proxy with 3s dial and response timeouts
     reverse_proxy {$CODER_UPSTREAM_IP} {
         transport http {
             dial_timeout 3s
+            response_header_timeout 3s
         }
     }
 
-    # 3. Intercept offline/sleeping errors and show SparkPlug wake screen
-    handle_errors 502 503 504 {
+    # 3. ONLY redirect when upstream is down (502) or times out (504)
+    handle_errors 502 504 {
         redir https://sparkplug.service.internal/wake/coder?redirect=https://{host}{uri} 307
     }
 }
