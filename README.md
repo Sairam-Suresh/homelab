@@ -15,7 +15,7 @@ When changes are pushed to `main`, GitHub Actions:
 
 ### Directory Structure
 
-- `control-plane/`: Core infrastructure services (Tailscale, Caddy reverse proxy, Step-CA, AdGuard Home, VoidAuth, Homelab Updater).
+- `control-plane/`: Core infrastructure services (Tailscale, Caddy reverse proxy, Step-CA, AdGuard Home, VoidAuth, Homelab Updater, ARKeep).
   - `deploy.yaml`: Deployment manifest for the control plane.
 - `s-coder/`: Coder development environment and PostgreSQL database.
   - `deploy.yaml`: Deployment manifest targeting `tower`.

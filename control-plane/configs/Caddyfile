@@ -130,3 +130,23 @@ sparkplug.service.internal:443 {
 
     reverse_proxy http://host.containers.internal:8085
 }
+
+# ARKeep Backup Platform Web UI & REST API
+arkeep.service.internal:443 {
+    tls {
+        import stepca_acme
+    }
+
+    log
+
+    reverse_proxy http://127.0.0.1:8081
+}
+
+# ARKeep gRPC Agent Ingress (HTTP/2 cleartext upstream)
+arkeep-grpc.service.internal:443 {
+    tls {
+        import stepca_acme
+    }
+
+    reverse_proxy h2c://127.0.0.1:9090
+}

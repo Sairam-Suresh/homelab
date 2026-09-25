@@ -1,6 +1,6 @@
 import os
 
-a = "clean_homelab_adguard_conf clean_homelab_adguard_work clean_homelab_caddy_config clean_homelab_caddy_data clean_homelab_step_data clean_homelab_tailscale_data clean_homelab_ts_socket clean_homelab_voidauth_db"
+a = "clean_homelab_adguard_conf clean_homelab_adguard_work clean_homelab_caddy_config clean_homelab_caddy_data clean_homelab_step_data clean_homelab_tailscale_data clean_homelab_ts_socket clean_homelab_voidauth_db clean_homelab_arkeep_data"
 
 a_l = a.split(" ")
 for i in a_l:

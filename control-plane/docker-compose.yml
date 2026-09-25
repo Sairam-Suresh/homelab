@@ -145,6 +145,31 @@ services:
     depends_on:
       - tailscale
 
+  arkeep:
+    image: ghcr.io/arkeep-io/arkeep-server:latest
+    restart: unless-stopped
+    env_file:
+      - /opt/serve/.homelab/env
+    environment:
+      - ARKEEP_HTTP_ADDR=:8081
+      - ARKEEP_GRPC_ADDR=:9090
+      - ARKEEP_BASE_URL=https://arkeep.service.internal
+      - ARKEEP_DATA_DIR=/var/lib/arkeep/data
+      - ARKEEP_DB_DRIVER=sqlite
+      - ARKEEP_DB_DSN=/var/lib/arkeep/arkeep.db
+    volumes:
+      - arkeep_data:/var/lib/arkeep
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    network_mode: service:tailscale
+    depends_on:
+      - tailscale
+      - caddy
+
 volumes:
   adguard_work:
   adguard_conf:
@@ -155,3 +180,4 @@ volumes:
   voidauth_db:
   step_data:
   caddy_socket:
+  arkeep_data:
