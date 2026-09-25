@@ -157,8 +157,12 @@ services:
       - ARKEEP_DATA_DIR=/var/lib/arkeep/data
       - ARKEEP_DB_DRIVER=sqlite
       - ARKEEP_DB_DSN=/var/lib/arkeep/arkeep.db
+      - RCLONE_CONFIG=/root/.config/rclone/rclone.conf
+      - SSL_CERT_FILE=/home/step/certs/root_ca.crt
     volumes:
       - arkeep_data:/var/lib/arkeep
+      - /opt/serve/.arkeep/rclone.conf:/root/.config/rclone/rclone.conf:ro
+      - step_data:/home/step:ro
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/health/ready"]
       interval: 30s
@@ -169,6 +173,8 @@ services:
     depends_on:
       - tailscale
       - caddy
+      - stepca
+      - voidauth
 
 volumes:
   adguard_work:
